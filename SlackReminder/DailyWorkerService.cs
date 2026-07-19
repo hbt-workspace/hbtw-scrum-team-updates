@@ -22,19 +22,7 @@ public class DailyWorkerService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             DateTime now = DateTime.Now;
-
-            // Next 10:30 AM
-            DateTime nextRun = new DateTime(
-                now.Year,
-                now.Month,
-                now.Day,
-                10, 30, 0);
-
-            // If today's 10:30 AM has passed, schedule for tomorrow
-            if (now >= nextRun)
-            {
-                nextRun = nextRun.AddDays(1);
-            }
+            DateTime nextRun = GetNextRunTime(now);
 
             TimeSpan delay = nextRun - now;
 
@@ -80,6 +68,31 @@ public class DailyWorkerService : BackgroundService
         {
             _logger.LogError(ex, "Error while sending daily reminder.");
         }
-        
+
+    }
+
+    private static DateTime GetNextRunTime(DateTime now)
+    {
+        // Today's scheduled time (10:30 AM)
+        DateTime nextRun = new DateTime(
+            now.Year,
+            now.Month,
+            now.Day,
+            10, 30, 0);
+
+        // If today's time has passed, move to tomorrow
+        if (now >= nextRun)
+        {
+            nextRun = nextRun.AddDays(1);
+        }
+
+        // Skip Saturday and Sunday
+        while (nextRun.DayOfWeek == DayOfWeek.Saturday ||
+               nextRun.DayOfWeek == DayOfWeek.Sunday)
+        {
+            nextRun = nextRun.AddDays(1);
+        }
+
+        return nextRun;
     }
 }
