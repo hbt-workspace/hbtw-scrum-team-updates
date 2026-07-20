@@ -12,14 +12,13 @@ public class SlackReminderService : ISlackReminderService
     private readonly SlackOptions _options;
 
     public SlackReminderService(
-        ILogger<SlackReminderService> logger,
-        IOptions<SlackOptions> options)
+        IHttpClientFactory httpClientFactory,
+        IOptions<SlackOptions> options,
+        ILogger<SlackReminderService> logger)
     {
-        _logger = logger;
+        _httpClient = httpClientFactory.CreateClient();
         _options = options.Value;
-        _httpClient = new HttpClient();
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _options.BotToken);
+        _logger = logger;
     }
 
     public async Task SendDailyReminderAsync(
@@ -27,44 +26,60 @@ public class SlackReminderService : ISlackReminderService
     {
         // TODO:
         // Get reminder data from database
-        await SendMessageAsync(_options.SlackAPIUrl, _options.ChannelId, _options.MessageTemplate, cancellationToken);
-
         _logger.LogInformation("Sending daily Slack reminder...");
 
-        await Task.Delay(1000, cancellationToken);
+        await SendMessageAsync(cancellationToken);
 
-        _logger.LogInformation("Daily reminder sent.");
+        _logger.LogInformation("Daily Slack reminder completed.");
     }
 
-    public async Task SendMessageAsync(
-        string slackApiUrl,
-        string channel,
-        string message,
-        CancellationToken cancellationToken = default)
+    public async Task SendMessageAsync(CancellationToken cancellationToken = default)
     {
         // TODO:
         // Call Slack API
         var payload = new
         {
-            channel = channel,
-            text = message
+            channel = _options.ChannelId,
+            text = _options.MessageTemplate
         };
 
-        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        using var request = new HttpRequestMessage(HttpMethod.Post, _options.SlackAPIUrl);
 
-        var response = await _httpClient.PostAsync(slackApiUrl, content);
-        var responseBody = await response.Content.ReadAsStringAsync();
+        request.Headers.Authorization =
+            new AuthenticationHeaderValue("Bearer", _options.BotToken);
 
-        if (!response.IsSuccessStatusCode || !responseBody.Contains("\"ok\":true"))
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            Encoding.UTF8,
+            "application/json");
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+
+        // Throws if HTTP status is not 2xx
+        response.EnsureSuccessStatusCode();
+
+        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        using var json = JsonDocument.Parse(responseBody);
+
+        bool ok = json.RootElement.GetProperty("ok").GetBoolean();
+
+        if (!ok)
         {
-            Console.Write($"Slack API error: {responseBody}");
+            string? error = json.RootElement.TryGetProperty("error", out var errorElement)
+                ? errorElement.GetString()
+                : "Unknown error";
+
+            _logger.LogError(
+                "Slack API returned an error. Channel: {Channel}, Error: {Error}",
+                _options.ChannelId,
+                error);
+
+            throw new InvalidOperationException($"Slack API error: {error}");
         }
 
         _logger.LogInformation(
-            "Sending Slack message to {Channel}: {Message}",
-            channel,
-            message);
-
-        await Task.Delay(500, cancellationToken);
+            "Slack message sent successfully to channel {Channel}.",
+            _options.ChannelId);
     }
 }
