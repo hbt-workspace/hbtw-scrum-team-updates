@@ -1,7 +1,6 @@
 @SlackReminder_HostAddress = http://localhost:5271
 @APIKey = racox978hm8xe8vlueer8uoickirnujf
     
-POST {{SlackReminder_HostAddress}}/slack-reminder/send
+GET {{SlackReminder_HostAddress}}/slack-reminder/send
 Accept: application/json
 X-API-KEY: {{APIKey}}
-

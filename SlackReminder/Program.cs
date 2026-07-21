@@ -13,6 +13,7 @@ builder.Services.Configure<SlackOptions>(
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ISlackReminderService, SlackReminderService>();
 
+// Add the daily worker service to the DI container
 builder.Services.AddHostedService<DailyWorkerService>();
 
 var app = builder.Build();
