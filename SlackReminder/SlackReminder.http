@@ -1,4 +1,4 @@
-@SlackReminder_HostAddress = http://localhost:5271
+@SlackReminder_HostAddress = https://slackreminder.hbtworkspace.in
 @APIKey = racox978hm8xe8vlueer8uoickirnujf
     
 GET {{SlackReminder_HostAddress}}/slack-reminder/send
