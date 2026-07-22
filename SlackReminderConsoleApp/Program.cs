@@ -30,8 +30,9 @@ using var scope = host.Services.CreateScope();
 
 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 var service = scope.ServiceProvider.GetRequiredService<ISlackReminderService>();
-// Only execute on Saturday and Sunday
-if (DateTime.Now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+// Only execute on Monday to Friday 
+if (DateTime.Now.DayOfWeek is not DayOfWeek.Saturday
+    && DateTime.Now.DayOfWeek is not DayOfWeek.Sunday)
 {
     logger.LogInformation("Today is {Day}. Sending Slack reminder...", DateTime.Now.DayOfWeek);
 
@@ -42,8 +43,8 @@ if (DateTime.Now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
 else
 {
     logger.LogInformation(
-        "Today is {Day}. Slack reminder skipped because it only runs on Saturday and Sunday.",
+        "Today is {Day}. Slack reminder skipped because it only runs on Monday to Friday.",
         DateTime.Now.DayOfWeek);
 }
 
-Console.WriteLine("Finished.");
+Console.WriteLine("Daily job completed at {Time}.", DateTime.Now);
