@@ -10,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<SlackOptions>(
     builder.Configuration.GetSection("Slack"));
 
+builder.Services.Configure<DailyScrumOptions>(
+    builder.Configuration.GetSection("DailyScrum"));
+
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ISlackReminderService, SlackReminderService>();
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace SlackReminder;
 
@@ -6,13 +7,15 @@ public class DailyWorkerService : BackgroundService
 {
     private readonly ILogger<DailyWorkerService> _logger;
     private readonly IServiceProvider _serviceProvider;
-    
+    private readonly DailyScrumOptions _dailyScrumOptions;
     public DailyWorkerService(
         ILogger<DailyWorkerService> logger,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IOptions<DailyScrumOptions> dailyScrumOptions)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _dailyScrumOptions = dailyScrumOptions.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -71,14 +74,16 @@ public class DailyWorkerService : BackgroundService
 
     }
 
-    private static DateTime GetNextRunTime(DateTime now)
+    private DateTime GetNextRunTime(DateTime now)
     {
         // Today's scheduled time (10:30 AM)
         DateTime nextRun = new DateTime(
             now.Year,
             now.Month,
             now.Day,
-            10, 30, 0);
+            _dailyScrumOptions.Hour,
+            _dailyScrumOptions.Minute,
+            0);
 
         // If today's time has passed, move to tomorrow
         if (now >= nextRun)
